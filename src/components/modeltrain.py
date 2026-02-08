@@ -16,7 +16,7 @@ from xgboost import XGBRegressor
 
 from src.exception import CustomException
 from src.logger import logging
-from src.utils import save_object, evaluate_models
+from src.utils import save_object, evaluate_and_tune_models
 
 
 @dataclass
@@ -46,10 +46,10 @@ class Modeltrainer:
                 "XGBRegressor":XGBRegressor(),
                 "CatBoosting Regressor":CatBoostRegressor(verbose=False)
             }
-            model_report, best_model_name, best_model_score, best_model = evaluate_models(
+            model_report, best_model_name, best_model_score, best_model = evaluate_and_tune_models(
               X_train, y_train, X_test, y_test, models
              )
-            logging.info(f"Best model found on both training and testing dataset: {best_model_name}")
+            logging.info(f"Best model found on both training and testing dataset: {best_model_name} with r2_score: {best_model_score}")
             save_object(
                 file_path=self.model_tariner_config.trained_model_file_path,
                 obj=best_model
