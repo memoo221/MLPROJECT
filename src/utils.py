@@ -90,3 +90,20 @@ def get_param_grids():
         "CatBoosting Regressor": {
         }
     }
+
+def load_object(file_path: str):
+    """
+    Loads a Python object from a pickle file.
+
+    Parameters:
+    - file_path (str): Path to the pickle file
+
+    Returns:
+    - The Python object loaded from the pickle file
+    """
+    try:
+        with open(file_path, "rb") as file:
+            return pickle.load(file)
+    except Exception as e:
+        raise CustomException(e, sys)
+    
