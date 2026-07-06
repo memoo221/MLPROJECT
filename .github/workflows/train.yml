@@ -1,0 +1,31 @@
+﻿name: Retrain ML Model
+
+on:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install -r MLPROJECT/requirements.txt
+
+      - name: Run training pipeline
+        working-directory: MLPROJECT
+        run: python src/components/data_ingestion.py
+
+      - name: Upload trained model
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-artifacts
+          path: MLPROJECT/artifacts/
