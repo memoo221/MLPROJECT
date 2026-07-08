@@ -1,0 +1,8 @@
+.git
+.github
+logs
+catboost_info
+notebooks
+__pycache__
+*.pyc
+*.log
