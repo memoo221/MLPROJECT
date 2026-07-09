@@ -1,5 +1,6 @@
 import sys
 from src.logger import logging
+from src.utils import get_collection_as_dataframe
 
 def error_message_detail(error,error_detail:sys):
     _,_,exc_tb=error_detail.exc_info()
