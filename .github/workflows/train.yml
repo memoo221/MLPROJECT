@@ -3,6 +3,9 @@
 on:
   push:
     branches: [ main, master ]
+    paths-ignore:
+      - 'Dockerfile'
+      - '.dockerignore'
   workflow_dispatch: # Enables the manual trigger button
 
 jobs:
@@ -36,16 +39,56 @@ jobs:
   docker:
     needs: train
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Download trained model
         uses: actions/download-artifact@v4
         with:
           name: model-artifacts
           path: artifacts/
+
+      - name: Compute next version
+        id: version
+        run: |
+          last_tag=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n 1)
+          if [ -z "$last_tag" ]; then
+            last_tag="v0.0.0"
+          fi
+          version="${last_tag#v}"
+          IFS='.' read -r major minor patch <<< "$version"
+
+          msg=$(git log -1 --pretty=%B)
+          if echo "$msg" | grep -qiE '(^|[^a-z])major([^a-z]|$)'; then
+            bump="major"
+          elif echo "$msg" | grep -qiE '(^|[^a-z])minor([^a-z]|$)'; then
+            bump="minor"
+          else
+            bump="patch"
+          fi
+
+          case "$bump" in
+            major) major=$((major + 1)); minor=0; patch=0 ;;
+            minor) minor=$((minor + 1)); patch=0 ;;
+            patch) patch=$((patch + 1)) ;;
+          esac
+
+          new_version="$major.$minor.$patch"
+          echo "Bumping $bump: $last_tag -> v$new_version"
+          echo "version=$new_version" >> "$GITHUB_OUTPUT"
+
+      - name: Tag commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "v${{ steps.version.outputs.version }}"
+          git push origin "v${{ steps.version.outputs.version }}"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -61,4 +104,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/mlproject:latest,${{ secrets.DOCKERHUB_USERNAME }}/mlproject:${{ github.sha }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/mlproject:latest,${{ secrets.DOCKERHUB_USERNAME }}/mlproject:${{ steps.version.outputs.version }}
